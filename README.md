@@ -4,7 +4,7 @@ This project provides a comprehensive analysis of an e-commerce customer dataset
 ## Live Report
 
 Access the rendered HTML report here:  
-[View the full analysis report](https://kushagrashukla30.github.io/EcomRegression2/)
+[View the full analysis report](https://ecomregression-2.pages.dev/)
 
 
 ## Summary of Analysis
