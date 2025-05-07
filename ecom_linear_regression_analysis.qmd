@@ -1,0 +1,175 @@
+---
+title: "E-Commerce Linear Regression Analysis"
+author: "Kushagra Shukla"
+format:
+  html:
+    theme: darkly
+    toc-depth: 2
+    number-sections: true
+---
+
+# Github Repository:
+https://github.com/KushagraShukla30/EcomRegression2/
+
+
+# E-Commerce Linear Regression Analysis
+
+This document presents the analysis of an e-commerce dataset using various statistical methods, including simple and multiple linear regression, feature engineering, and customer segmentation through K-means clustering.
+
+## 1. Import Data and Basic Exploration
+
+We begin by loading the dataset and performing a basic exploration.
+
+```{r}
+ecomdata <- read.csv("./data/ecomdata")
+str(ecomdata)
+summary(ecomdata)
+```
+
+## 2. Visualization and Correlation Analysis
+
+### 2.1 Scatter Plots
+
+The following scatter plots show the relationship between various variables:
+
+**Time on Website vs Yearly Amount Spent**
+
+```{r}
+library(ggplot2)
+ggplot(ecomdata, aes(x = Time.on.Website, y = Yearly.Amount.Spent)) + 
+  geom_point(colour = "orange") + 
+  ggtitle("Time on Website vs Yearly Amount Spent") + 
+  xlab("Time on Website") +
+  ylab("Yearly Amount Spent")
+```
+
+**Average Session Length vs Yearly Amount Spent**
+
+```{r}
+ggplot(ecomdata, aes(x = Avg..Session.Length, y = Yearly.Amount.Spent)) + 
+  geom_point(colour = "orange") +
+  ggtitle("Average Session Length vs Yearly Amount Spent") + 
+  xlab("Average Session Length") +
+  ylab("Yearly Amount Spent")
+```
+
+### 2.2 Pairplot
+
+```{r}
+pairs(ecomdata[c("Avg..Session.Length", "Time.on.App", "Time.on.Website", 
+                 "Length.of.Membership", "Yearly.Amount.Spent")],
+      col = "orange", pch = 16,
+      labels = c("Avg Session Length", "Time on App", "Time on Website",
+                 "Length of Membership", "Yearly Spent"),
+      main = "Pairplot of Variables")
+```
+
+### 2.3 Histogram and Boxplot of Length of Membership
+
+**Histogram**
+
+```{r}
+ggplot(ecomdata, aes(x = Length.of.Membership)) + 
+  geom_histogram(color = "white", fill = "orange", binwidth = 0.5)
+```
+
+**Boxplot**
+
+```{r}
+ggplot(ecomdata, aes(x = "", y = Length.of.Membership)) + 
+  geom_boxplot(fill = "orange") +
+  ylab("Length of Membership")
+```
+
+## 3. Simple Linear Regression
+
+We fit a simple linear regression model to predict **Yearly Amount Spent** based on **Length of Membership**.
+
+```{r}
+lm.fit1 <- lm(Yearly.Amount.Spent ~ Length.of.Membership, data = ecomdata)
+summary(lm.fit1)
+```
+
+**Regression Line**
+
+```{r}
+plot(Yearly.Amount.Spent ~ Length.of.Membership, data = ecomdata)
+abline(lm.fit1, col = "red")
+```
+
+### 3.1 Residual Diagnostics
+
+```{r}
+qqnorm(residuals(lm.fit1)); qqline(residuals(lm.fit1), col = "red")
+shapiro.test(residuals(lm.fit1))
+```
+
+## 4. Train-Test Split and Model Evaluation (Simple Linear)
+
+```{r}
+set.seed(1)
+train_idx <- sample(1:nrow(ecomdata), 0.8 * nrow(ecomdata))
+train <- ecomdata[train_idx, ]
+test <- ecomdata[-train_idx, ]
+
+lm.fit0.8 <- lm(Yearly.Amount.Spent ~ Length.of.Membership, data = train)
+summary(lm.fit0.8)
+
+prediction0.8 <- predict(lm.fit0.8, newdata = test)
+err0.8 <- prediction0.8 - test$Yearly.Amount.Spent
+rmse <- sqrt(mean(err0.8^2))
+mape <- mean(abs(err0.8 / test$Yearly.Amount.Spent))
+
+c(RMSE = rmse, MAPE = mape, R2 = summary(lm.fit0.8)$r.squared)
+```
+
+## 5. Multiple Linear Regression
+
+```{r}
+multi.lm.fit <- lm(Yearly.Amount.Spent ~ Avg..Session.Length + 
+                     Time.on.App + Time.on.Website + 
+                     Length.of.Membership, data = ecomdata)
+summary(multi.lm.fit)
+```
+
+## 6. Feature Engineering and Correlation Matrix
+
+```{r}
+ecomdata$App_Web_Ratio <- ecomdata$Time.on.App / (ecomdata$Time.on.Website + 1)
+ecomdata$Engagement_Score <- ecomdata$Avg..Session.Length * ecomdata$Length.of.Membership
+
+library(corrplot)
+num_data <- ecomdata[, sapply(ecomdata, is.numeric)]
+cor_matrix <- cor(num_data, use = "complete.obs")
+corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.8)
+```
+
+## 7. Customer Segmentation: K-means Clustering
+
+```{r}
+set.seed(2)
+kmeans_result <- kmeans(ecomdata[, c("Avg..Session.Length", "Time.on.App", 
+                                     "Time.on.Website", "Length.of.Membership")], 
+                        centers = 3, nstart = 20)
+
+ecomdata$Cluster <- as.factor(kmeans_result$cluster)
+
+ggplot(ecomdata, aes(x = Avg..Session.Length, y = Time.on.App, color = Cluster)) + 
+  geom_point() + 
+  ggtitle("Customer Segmentation using K-means Clustering") +
+  xlab("Avg. Session Length") + 
+  ylab("Time on App")
+```
+
+## 8. Residual Analysis for Multiple Regression
+
+```{r}
+multi.lm.fit0.8 <- lm(Yearly.Amount.Spent ~ Avg..Session.Length + 
+                      Time.on.App + Time.on.Website + 
+                      Length.of.Membership, data = train)
+
+plot(multi.lm.fit0.8, which = 1)
+qqnorm(residuals(multi.lm.fit0.8))
+qqline(residuals(multi.lm.fit0.8), col = "red")
+```
+
